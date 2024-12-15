@@ -4,45 +4,43 @@ using SomiodApi.Common;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.EnterpriseServices;
 using System.Linq;
 using System.Web.Http;
 
 namespace SOMIOD.Controllers
 {
-    [RoutePrefix("api/somiod")]
-    public class ContainerController : ApiRoutes
+    public partial class SomiodController : ApiRoutes
     {
-        private const string table = "Containers";
-        private int LastId => SqlHelper.ConnectionStarter(conn =>
+        private const string containersTable = "Containers";
+        private int ContainersLastId => SqlHelper.ConnectionStarter(conn =>
                 {
-                    SqlCommand cmd = new SqlCommand($"SELECT MAX(Id) FROM {table}", conn);
+                    SqlCommand cmd = new SqlCommand($"SELECT IDENT_CURRENT('{containersTable}')", conn);
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    if (!reader.Read())
+                    if (!reader.Read() || reader[0] == DBNull.Value)
                         return 0;
 
-                    return (int)reader[0];
+                    return Convert.ToInt32(reader[0]);
                 });
 
         [HttpGet]
         [Route("{applicationName}/{name}", Name = "GetContainer")]
-        public IHttpActionResult Get(string applicationName, string name)
+        public IHttpActionResult GetContainer(string applicationName, string name)
         {
             if (Request.Headers.Contains(specialHeader))
                 switch (Request.Headers.GetValues(specialHeader).First())
                 {
                     case "record":
-                        return Ok(SqlHelper.GetChildsOfType(LocateType.CONT_RECORDS, name));
+                        return Ok(SqlHelper.GetChildsOfType(LocateType.CONT_RECORDS, name, applicationName));
                     case "notification":
-                        return Ok(SqlHelper.GetChildsOfType(LocateType.CONT_NOTIFICATIONS, name));
+                        return Ok(SqlHelper.GetChildsOfType(LocateType.CONT_NOTIFICATIONS, name, applicationName));
                     default:
                         return BadRequest("Locator unknown");
                 }
 
             try
             {
-                var result = Find(name, applicationName);
+                var result = FindContainer(name, applicationName);
                 if (result == null)
                     return NotFound();
 
@@ -53,26 +51,38 @@ namespace SOMIOD.Controllers
                 return InternalServerError();
             }
         }
-        
+
         [HttpPost]
         [Route("{applicationName}")]
-        public IHttpActionResult Create(string applicationName, [FromBody] Container container)
+        public IHttpActionResult CreateContainer(string applicationName, [FromBody] Container container)
         {
             try
             {
-                Application application = ApplicationController.Find(applicationName);
+                Application application = FindApplication(applicationName);
                 if (application == null)
                     return NotFound();
 
-                if (!UrlNameValidation(container?.Name))
-                    container.Name = (LastId + 1).ToString();
-                if (container == null || Exists(container.Name))
-                    container.Name = $"{container.Name}_{LastId + 1}";
+                int test = SqlHelper.ConnectionStarter(conn =>
+                {
+                    SqlCommand cmd = new SqlCommand($"SELECT MAX(Id) FROM {containersTable}", conn);
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    if (!reader.Read() || reader[0] == DBNull.Value)
+                        return 0;
+
+                    return (int)reader[0];
+                });
+
+                string name = container?.Name;
+                if (container == null || !UrlNameValidation(name))
+                    name = (ContainersLastId + 1).ToString();
+                if (ExistsContainer(name))
+                    name = $"{name}_{ContainersLastId + 1}";
 
                 bool result = SqlHelper.ConnectionStarter(conn =>
                 {
-                    SqlCommand cmd = new SqlCommand($"INSERT INTO {table}(Name, Creation_Datetime, Application_Id) VALUES(@name, @creation_datetime, @parent)", conn);
-                    cmd.Parameters.AddWithValue("@name", container.Name);
+                    SqlCommand cmd = new SqlCommand($"INSERT INTO {containersTable}(Name, Creation_Datetime, Application_Id) VALUES(@name, @creation_datetime, @parent)", conn);
+                    cmd.Parameters.AddWithValue("@name", name);
                     cmd.Parameters.AddWithValue("@creation_datetime", DateTime.Now);
                     cmd.Parameters.AddWithValue("@parent", application.Id);
 
@@ -82,8 +92,8 @@ namespace SOMIOD.Controllers
                 if (result)
                     return BadRequest();
 
-                var cont = Find(container.Name, application.Name);
-                return CreatedAtRoute("GetContainer", new { name = cont.Name}, cont);
+                var cont = FindContainer(name, application.Name);
+                return CreatedAtRoute("GetContainer", new { name = cont.Name }, cont);
             }
             catch
             {
@@ -93,27 +103,29 @@ namespace SOMIOD.Controllers
 
         [HttpPut]
         [Route("{applicationName}/{name}")]
-        public IHttpActionResult Update(string applicationName, string name, [FromBody] Container container)
+        public IHttpActionResult UpdateContainer(string applicationName, string name, [FromBody] Container container)
         {
             try
             {
-                Container oldContainer = Find(name, applicationName);
+                Container oldContainer = FindContainer(name, applicationName);
                 if (oldContainer == null)
                     return NotFound();
 
-                if (container == null || !UrlNameValidation(container.Name))
+                if (!UrlNameValidation(container?.Name))
                     return BadRequest();
 
-                if (container.Name == null)
-                    container.Name = $"{oldContainer.Id}";
-                else if (Exists(container.Name))
-                    BadRequest();
+                string newName = container?.Name;
+                if (newName == null)
+                    newName = $"{oldContainer.Id}";
+                else if (oldContainer.Name == newName || ExistsApplication(newName))
+                    BadRequest("Name is the same or already exists");
 
-                
-                bool result = SqlHelper.ConnectionStarter(conn => {    
-                SqlCommand cmd = new SqlCommand($"UPDATE {table} SET Name = @name WHERE Name = @old_name", conn);
-                    cmd.Parameters.AddWithValue("@name", container.Name);
-                    cmd.Parameters.AddWithValue("@old_name", name);
+
+                bool result = SqlHelper.ConnectionStarter(conn =>
+                {
+                    SqlCommand cmd = new SqlCommand($"UPDATE {containersTable} SET Name = @name WHERE Name = @old_name", conn);
+                    cmd.Parameters.AddWithValue("@name", newName);
+                    cmd.Parameters.AddWithValue("@old_name", oldContainer.Name);
 
                     return cmd.ExecuteNonQuery() != 1;
                 });
@@ -121,7 +133,7 @@ namespace SOMIOD.Controllers
                 if (result)
                     return BadRequest();
 
-                return Ok(Find(container.Name, applicationName));
+                return Ok(FindContainer(newName, applicationName));
             }
             catch
             {
@@ -131,65 +143,63 @@ namespace SOMIOD.Controllers
 
         [HttpDelete]
         [Route("{applicationName}/{name}")]
-        /**
-         * Might rework this for a recursive delete
-         */
-        public IHttpActionResult Delete(string applicationName, string name)
+        public IHttpActionResult DeleteContainer(string applicationName, string name)
         {
             try
             {
-                if (NotExists(name, applicationName))
+                if (NotExistsContainer(name, applicationName))
                     return NotFound();
 
                 SqlHelper.TransactionStarter(cmd =>
                 {
-                    RecordController.DeleteAll(cmd, SqlHelper.GetChildsOfType(cmd, LocateType.CONT_RECORDS, name));
-                    NotificationController.DeleteAll(cmd, SqlHelper.GetChildsOfType(cmd, LocateType.CONT_NOTIFICATIONS, name));
+                    DeleteAllRecords(cmd, SqlHelper.GetChildsOfType(cmd, LocateType.CONT_RECORDS, name, applicationName));
+                    DeleteAllNotifications(cmd, SqlHelper.GetChildsOfType(cmd, LocateType.CONT_NOTIFICATIONS, name, applicationName));
 
-                    cmd.CommandText = $"DELETE FROM {table} WHERE Name = @name";
+                    cmd.CommandText = $"DELETE FROM {containersTable} WHERE Name = @name";
                     cmd.Parameters.AddWithValue("@name", name);
 
                     cmd.ExecuteNonQuery();
                 });
 
-                NotificationController.ClearLeftoverNotifs();
+                ClearLeftoverNotifs();
                 return StatusCode(System.Net.HttpStatusCode.NoContent);
             }
             catch
             {
-                NotificationController.ClearLeftoverNotifs(false);
+                ClearLeftoverNotifs(false);
                 return InternalServerError();
             }
         }
 
-        public static void DeleteAll(SqlCommand cmd, List<string> names)
+        public static void DeleteAllContainers(SqlCommand cmd, List<string> names, string parentName)
         {
             if (names.Count == 0)
                 return;
 
             foreach (var name in names)
             {
-                RecordController.DeleteAll(cmd, SqlHelper.GetChildsOfType(cmd, LocateType.CONT_RECORDS, name));
-                NotificationController.DeleteAll(cmd, SqlHelper.GetChildsOfType(cmd, LocateType.CONT_NOTIFICATIONS, name));
+                DeleteAllRecords(cmd, SqlHelper.GetChildsOfType(cmd, LocateType.CONT_RECORDS, name, parentName));
+                DeleteAllNotifications(cmd, SqlHelper.GetChildsOfType(cmd, LocateType.CONT_NOTIFICATIONS, name, parentName));
             }
 
             string nameList = string.Join(",", names);
 
-            cmd.CommandText = $"DELETE FROM {table} WHERE Name IN (@names)";
+            cmd.CommandText = $"DELETE FROM {containersTable} WHERE Name IN (@names)";
             cmd.Parameters.AddWithValue("@names", nameList);
 
             cmd.ExecuteNonQuery();
+            cmd.Parameters.Clear();
         }
 
-        public static Container Find(string name, string parentName)
+        public static Container FindContainer(string name, string parentName)
         {
             return SqlHelper.ConnectionStarter(conn =>
             {
-                SqlCommand cmd = new SqlCommand($"SELECT t.* FROM {table} t" +
+                SqlCommand cmd = new SqlCommand($"SELECT t.* FROM {containersTable} t" +
                     $" JOIN Applications a ON a.id = t.Application_Id" +
-                    $" WHERE t.Name = @name AND a.Name = @parentName", conn);
+                    $" WHERE t.Name = @name AND a.Name = @parent_name", conn);
                 cmd.Parameters.AddWithValue("@name", name);
-                cmd.Parameters.AddWithValue("@parentName", parentName);
+                cmd.Parameters.AddWithValue("@parent_name", parentName);
 
                 SqlDataReader reader = cmd.ExecuteReader();
 
@@ -208,34 +218,34 @@ namespace SOMIOD.Controllers
             });
         }
 
-        public static bool NotExists(string name, string parentName)
+        public static bool NotExistsContainer(string name, string parentName)
         {
             return SqlHelper.ConnectionStarter(conn =>
             {
-                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {table} t" +
+                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {containersTable} t" +
                     $" JOIN Applications a ON a.id = t.Application_Id" +
-                    $" WHERE t.Name = @name AND a.Name = @parentName", conn);
+                    $" WHERE t.Name = @name AND a.Name = @parent_name", conn);
                 cmd.Parameters.AddWithValue("@name", name);
-                cmd.Parameters.AddWithValue("@parentName", parentName);
-                
+                cmd.Parameters.AddWithValue("@parent_name", parentName);
+
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 reader.Read();
-                return !reader.GetBoolean(0);
+                return (int)reader[0] == 0;
             });
         }
-        public static bool Exists(string name)
+        public static bool ExistsContainer(string name)
         {
             return SqlHelper.ConnectionStarter(conn =>
             {
-                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {table}" +
+                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {containersTable}" +
                     $" WHERE Name = @name", conn);
                 cmd.Parameters.AddWithValue("@name", name);
-                
+
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 reader.Read();
-                return reader.GetBoolean(0);
+                return (int)reader[0] > 0;
             });
         }
     }

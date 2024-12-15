@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Web.Http;
-using System.Web.UI.WebControls;
 
 namespace SOMIOD.Common
 {
@@ -15,7 +12,7 @@ namespace SOMIOD.Common
             if (name == null)
                 return true;
 
-            if (Regex.Match(name, "^(a-zA-Z0-9_-.~)+$").Success)
+            if (Regex.Match(name, "^[A-Za-z0-9._~-]+$").Success)
                 return true;
 
             return false;

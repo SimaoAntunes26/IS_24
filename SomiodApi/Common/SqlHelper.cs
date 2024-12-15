@@ -10,7 +10,7 @@ namespace SOMIOD.Common
     {
         private static string DBConnection = "Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename=" + AppDomain.CurrentDomain.BaseDirectory + "App_Data\\SOMIOD_DB.mdf;Integrated Security=True";
 
-        public static List<string> GetChildsOfType(SqlCommand cmd, LocateType type, string parentName)
+        public static List<string> GetChildsOfType(SqlCommand cmd, LocateType type, string parentName, string grandparentName)
         {
             List<string> names = new List<string>();
 
@@ -26,19 +26,23 @@ namespace SOMIOD.Common
                     cmd.Parameters.AddWithValue("@NAME", parentName);
                     break;
                 case LocateType.CONT_RECORDS:
-                    cmd.CommandText = "SELECT c.Name FROM Records r " +
+                    cmd.CommandText = "SELECT r.Name FROM Records r " +
                         "JOIN Containers c ON c.id = r.Container_Id " +
-                        "WHERE c.Name = @NAME";
+                        "JOIN Applications a ON a.id = c.Application_Id " +
+                        "WHERE c.Name = @NAME AND a.Name = @GRANDNAME";
                     cmd.Parameters.AddWithValue("@NAME", parentName);
+                    cmd.Parameters.AddWithValue("@GRANDNAME", grandparentName);
                     break;
                 case LocateType.CONT_NOTIFICATIONS:
                     cmd.CommandText = "SELECT n.Name FROM Notifications n " +
                         "JOIN Containers c ON c.id = n.Container_Id " +
-                        "WHERE c.Name = @NAME";
+                        "JOIN Applications a ON a.id = c.Application_Id " +
+                        "WHERE c.Name = @NAME AND a.Name = @GRANDNAME";
                     cmd.Parameters.AddWithValue("@NAME", parentName);
+                    cmd.Parameters.AddWithValue("@GRANDNAME", grandparentName);
                     break;
                 case LocateType.APP_RECORDS:
-                    cmd.CommandText = "SELECT c.Name FROM Records r " +
+                    cmd.CommandText = "SELECT r.Name FROM Records r " +
                         "JOIN Containers c ON c.id = r.Container_Id " +
                         "JOIN Applications a ON a.id = c.Application_Id " +
                         "WHERE a.Name = @NAME";
@@ -62,14 +66,16 @@ namespace SOMIOD.Common
                 names.Add((string)reader[0]);
             }
 
+            reader.Close();
+            cmd.Parameters.Clear();
+
             return names;
         }
-
-        public static List<string> GetChildsOfType(LocateType type, string parentName)
+        public static List<string> GetChildsOfType(LocateType type, string parentName, string grandparentName = null)
         {
             return ConnectionStarter(conn =>
             {
-                return GetChildsOfType(conn.CreateCommand(), type, parentName);
+                return GetChildsOfType(conn.CreateCommand(), type, parentName, grandparentName);
             });
         }
 

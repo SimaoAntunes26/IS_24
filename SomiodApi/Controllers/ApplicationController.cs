@@ -10,24 +10,24 @@ using System.Web.Http;
 namespace SOMIOD.Controllers
 {
     [RoutePrefix("api/somiod")]
-    public class ApplicationController : ApiRoutes
+    public partial class SomiodController : ApiRoutes
     {
-        private const string table = "Applications";
+        private const string applicationsTable = "Applications";
 
-        private int LastId => SqlHelper.ConnectionStarter(conn =>
+        private int ApplicationLastId => SqlHelper.ConnectionStarter(conn =>
                 {
-                    SqlCommand cmd = new SqlCommand($"SELECT MAX(Id) FROM {table}", conn);
+                    SqlCommand cmd = new SqlCommand($"SELECT IDENT_CURRENT('{applicationsTable}')", conn);
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    if (!reader.Read())
+                    if (!reader.Read() || reader[0] == DBNull.Value)
                         return 0;
 
-                    return (int)reader[0];
+                    return Convert.ToInt32(reader[0]);
                 });
 
         [HttpGet]
         [Route("{name}", Name = "GetApplication")]
-        public IHttpActionResult Get(string name)
+        public IHttpActionResult GetApplication(string name)
         {
             if (Request.Headers.Contains(specialHeader))
                 switch (Request.Headers.GetValues(specialHeader).First())
@@ -44,7 +44,7 @@ namespace SOMIOD.Controllers
 
             try
             {
-                var result = Find(name);
+                var result = FindApplication(name);
 
                 if (result == null)
                     return NotFound();
@@ -59,7 +59,7 @@ namespace SOMIOD.Controllers
 
         [HttpGet]
         [Route("")]
-        public IEnumerable<string> GetAllLocate()
+        public IEnumerable<string> GetAllApplicationLocate()
         {
             if (Request.Headers.Contains(specialHeader) && Request.Headers.GetValues(specialHeader).First() == "application")
             {
@@ -71,18 +71,20 @@ namespace SOMIOD.Controllers
 
         [HttpPost]
         [Route("")]
-        public IHttpActionResult Create([FromBody] Application application)
+        public IHttpActionResult CreateApplication([FromBody] Application application)
         {
             try
             {
-                if (!UrlNameValidation(application?.Name))
-                    application.Name = (LastId + 1).ToString();
-                if(application == null || Exists(application.Name))
-                    application.Name = $"{application.Name}_{LastId + 1}";
+                string name = application?.Name;
+                if (application == null || !UrlNameValidation(name))
+                    name = (ApplicationLastId + 1).ToString();
+                if (ExistsApplication(name))
+                    name = $"{name}_{ApplicationLastId + 1}";
 
-                bool result = SqlHelper.ConnectionStarter(conn => {    
-                    SqlCommand cmd = new SqlCommand($"INSERT INTO {table}(Name, Creation_Datetime) VALUES(@name, @creation_datetime)", conn);
-                    cmd.Parameters.AddWithValue("@name", application.Name);
+                bool result = SqlHelper.ConnectionStarter(conn =>
+                {
+                    SqlCommand cmd = new SqlCommand($"INSERT INTO {applicationsTable}(Name, Creation_Datetime) VALUES(@name, @creation_datetime)", conn);
+                    cmd.Parameters.AddWithValue("@name", name);
                     cmd.Parameters.AddWithValue("@creation_datetime", DateTime.Now);
 
                     return cmd.ExecuteNonQuery() != 1;
@@ -91,8 +93,8 @@ namespace SOMIOD.Controllers
                 if (result)
                     return BadRequest();
 
-                var app = Find(application.Name);
-                return CreatedAtRoute("GetApplication", new { name = app.Name}, app);
+                var app = FindApplication(name);
+                return CreatedAtRoute("GetApplication", new { name = app.Name }, app);
             }
             catch
             {
@@ -102,25 +104,27 @@ namespace SOMIOD.Controllers
 
         [HttpPut]
         [Route("{name}")]
-        public IHttpActionResult Update(string name, [FromBody] Application application)
+        public IHttpActionResult UpdateApplication(string name, [FromBody] Application application)
         {
             try
             {
-                Application oldApplication = Find(name);
+                Application oldApplication = FindApplication(name);
                 if (oldApplication == null)
                     return NotFound();
 
-                if (application == null || !UrlNameValidation(application.Name))
+                if (!UrlNameValidation(application?.Name))
                     return BadRequest();
 
-                if (application.Name == null)
-                    application.Name = $"{oldApplication.Id}";
-                else if (Exists(application.Name))
-                    BadRequest();
-                
-                bool result = SqlHelper.ConnectionStarter(conn => {    
-                SqlCommand cmd = new SqlCommand($"UPDATE {table} SET Name = @name WHERE Name = @old_name", conn);
-                    cmd.Parameters.AddWithValue("@name", application.Name);
+                string newName = application?.Name;
+                if (newName == null)
+                    newName = $"{oldApplication.Id}";
+                else if (oldApplication.Name == newName || ExistsApplication(newName))
+                    BadRequest("Name is the same or already exists");
+
+                bool result = SqlHelper.ConnectionStarter(conn =>
+                {
+                    SqlCommand cmd = new SqlCommand($"UPDATE {applicationsTable} SET Name = @name WHERE Name = @old_name", conn);
+                    cmd.Parameters.AddWithValue("@name", newName);
                     cmd.Parameters.AddWithValue("@old_name", oldApplication.Name);
 
                     return cmd.ExecuteNonQuery() != 1;
@@ -129,7 +133,7 @@ namespace SOMIOD.Controllers
                 if (result)
                     return BadRequest();
 
-                return Ok(Find(application.Name));
+                return Ok(FindApplication(newName));
             }
             catch
             {
@@ -139,38 +143,38 @@ namespace SOMIOD.Controllers
 
         [HttpDelete]
         [Route("{name}")]
-        public IHttpActionResult Delete(string name)
+        public IHttpActionResult DeleteApplication(string name)
         {
             try
             {
-                if (!Exists(name))
+                if (!ExistsApplication(name))
                     return NotFound();
 
                 SqlHelper.TransactionStarter(cmd =>
                 {
-                    ContainerController.DeleteAll(cmd, SqlHelper.GetChildsOfType(LocateType.APP_CONTAINERS, name));
+                    DeleteAllContainers(cmd, SqlHelper.GetChildsOfType(LocateType.APP_CONTAINERS, name), name);
 
-                    cmd.CommandText = $"DELETE FROM {table} WHERE Name = @name";
+                    cmd.CommandText = $"DELETE FROM {applicationsTable} WHERE Name = @name";
                     cmd.Parameters.AddWithValue("@name", name);
 
                     cmd.ExecuteNonQuery();
                 });
 
-                NotificationController.ClearLeftoverNotifs();
+                ClearLeftoverNotifs();
                 return StatusCode(System.Net.HttpStatusCode.NoContent);
             }
             catch
             {
-                NotificationController.ClearLeftoverNotifs(false);
+                ClearLeftoverNotifs(false);
                 return InternalServerError();
             }
         }
 
-        public static Application Find(string name)
+        public static Application FindApplication(string name)
         {
             return SqlHelper.ConnectionStarter(conn =>
             {
-                SqlCommand cmd = new SqlCommand($"SELECT * FROM {table} WHERE Name = @name", conn);
+                SqlCommand cmd = new SqlCommand($"SELECT * FROM {applicationsTable} WHERE Name = @name", conn);
                 cmd.Parameters.AddWithValue("@name", name);
 
                 SqlDataReader reader = cmd.ExecuteReader();
@@ -189,17 +193,17 @@ namespace SOMIOD.Controllers
             });
         }
 
-        public static bool Exists(string name)
+        public static bool ExistsApplication(string name)
         {
             return SqlHelper.ConnectionStarter(conn =>
             {
-                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {table} WHERE Name = @name", conn);
+                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {applicationsTable} WHERE Name = @name", conn);
                 cmd.Parameters.AddWithValue("@name", name);
-                
+
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 reader.Read();
-                return reader.GetBoolean(0);
+                return (int)reader[0] > 0;
             });
         }
     }

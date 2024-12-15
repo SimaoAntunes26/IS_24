@@ -3,34 +3,31 @@ using SOMIOD.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Web;
 using System.Web.Http;
 
 namespace SOMIOD.Controllers
 {
-    [RoutePrefix("api/somiod")]
-    public class RecordController : ApiRoutes
+    public partial class SomiodController : ApiRoutes
     {
-        private const string table = "Records";
-        private int LastId => SqlHelper.ConnectionStarter(conn =>
+        private const string recordTable = "Records";
+        private int RecordLastId => SqlHelper.ConnectionStarter(conn =>
                 {
-                    SqlCommand cmd = new SqlCommand($"SELECT MAX(Id) FROM {table}", conn);
+                    SqlCommand cmd = new SqlCommand($"SELECT IDENT_CURRENT('{recordTable}')", conn);
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    if (!reader.Read())
+                    if (!reader.Read() || reader[0] == DBNull.Value)
                         return 0;
 
-                    return (int)reader[0];
+                    return Convert.ToInt32(reader[0]);
                 });
 
         [HttpGet]
         [Route("{applicationName}/{containerName}/record/{name}", Name = "GetRecord")]
-        public IHttpActionResult Get(string applicationName, string containerName, string name)
+        public IHttpActionResult GetRecord(string applicationName, string containerName, string name)
         {
             try
             {
-                var result = Find(name, containerName, applicationName);
+                var result = FindRecord(name, containerName, applicationName);
                 if (result == null)
                     return NotFound();
 
@@ -44,26 +41,27 @@ namespace SOMIOD.Controllers
 
         [HttpPost]
         [Route("{applicationName}/{containerName}/record")]
-        public IHttpActionResult Create(string applicationName, string containerName, [FromBody] Record record)
+        public IHttpActionResult CreateRecord(string applicationName, string containerName, [FromBody] Record record)
         {
-            if (record == null)
+            if (record == null || record?.Content == null)
                 return BadRequest("Body needs to contain at least record content");
-            
+
             try
             {
-                Container container = ContainerController.Find(containerName, applicationName);
+                Container container = FindContainer(containerName, applicationName);
                 if (container == null)
                     return NotFound();
 
-                if (!UrlNameValidation(record.Name))
-                    record.Name = (LastId + 1).ToString();
-                else if (Exists(record.Name))
-                    record.Name = $"{record.Name}_{LastId + 1}";
+                string name = record?.Name;
+                if (record == null || !UrlNameValidation(name))
+                    name = (RecordLastId + 1).ToString();
+                if (ExistsRecord(name))
+                    name = $"{name}_{RecordLastId + 1}";
 
                 bool result = SqlHelper.ConnectionStarter(conn =>
                 {
-                    SqlCommand cmd = new SqlCommand($"INSERT INTO {table}(Name, Creation_Datetime, Container_Id, Content) VALUES(@name, @creation_datetime, @parent, @content)", conn);
-                    cmd.Parameters.AddWithValue("@name", record.Name);
+                    SqlCommand cmd = new SqlCommand($"INSERT INTO {recordTable}(Name, Creation_Datetime, Container_Id, Content) VALUES(@name, @creation_datetime, @parent, @content)", conn);
+                    cmd.Parameters.AddWithValue("@name", name);
                     cmd.Parameters.AddWithValue("@creation_datetime", DateTime.Now);
                     cmd.Parameters.AddWithValue("@parent", container.Id);
                     cmd.Parameters.AddWithValue("@content", record.Content);
@@ -74,8 +72,8 @@ namespace SOMIOD.Controllers
                 if (result)
                     return BadRequest();
 
-                var rec = Find(record.Name, container.Name, applicationName);
-                return CreatedAtRoute("GetRecord", new { name = rec.Name}, rec);
+                var rec = FindRecord(name, container.Name, applicationName);
+                return CreatedAtRoute("GetRecord", new { name = rec.Name }, rec);
             }
             catch
             {
@@ -85,19 +83,16 @@ namespace SOMIOD.Controllers
 
         [HttpDelete]
         [Route("{applicationName}/{containerName}/record/{name}")]
-        /**
-         * Might rework this for a recursive delete
-         */
-        public IHttpActionResult Delete(string applicationName, string containerName, string name)
+        public IHttpActionResult DeleteRecord(string applicationName, string containerName, string name)
         {
             try
             {
-                if (NotExists(name, containerName, applicationName))
+                if (NotExistsRecord(name, containerName, applicationName))
                     return NotFound();
 
                 bool result = SqlHelper.ConnectionStarter(conn =>
                 {
-                    SqlCommand cmd = new SqlCommand($"DELETE FROM {table} WHERE Name = @name", conn);
+                    SqlCommand cmd = new SqlCommand($"DELETE FROM {recordTable} WHERE Name = @name", conn);
                     cmd.Parameters.AddWithValue("@name", name);
 
                     return cmd.ExecuteNonQuery() != 1;
@@ -114,29 +109,31 @@ namespace SOMIOD.Controllers
             }
         }
 
-        public static void DeleteAll(SqlCommand cmd, List<string> names)
+        public static void DeleteAllRecords(SqlCommand cmd, List<string> names)
         {
             if (names.Count == 0)
                 return;
 
             string nameList = string.Join(",", names);
 
-            cmd.CommandText = $"DELETE FROM {table} WHERE Name IN (@names)";
+            cmd.CommandText = $"DELETE FROM {recordTable} WHERE Name IN (@names)";
             cmd.Parameters.AddWithValue("@names", nameList);
 
             cmd.ExecuteNonQuery();
+            cmd.Parameters.Clear();
         }
 
-        public static Record Find(string name, string parentName, string grandParentName)
+        public static Record FindRecord(string name, string parentName, string grandparentName)
         {
             return SqlHelper.ConnectionStarter(conn =>
             {
-                SqlCommand cmd = new SqlCommand($"SELECT t.* FROM {table} t" +
+                SqlCommand cmd = new SqlCommand($"SELECT t.* FROM {recordTable} t" +
                     $" JOIN Containers c ON c.id = t.Container_Id " +
                     $" JOIN Applications a ON a.id = c.Application_Id" +
-                    $" WHERE t.Name = @name AND a.Name = @parentName", conn);
+                    $" WHERE t.Name = @name AND c.Name = @parent_name AND a.Name = @grandparent_name", conn);
                 cmd.Parameters.AddWithValue("@name", name);
-                cmd.Parameters.AddWithValue("@parentName", parentName);
+                cmd.Parameters.AddWithValue("@parent_name", parentName);
+                cmd.Parameters.AddWithValue("@grandparent_name", grandparentName);
 
                 SqlDataReader reader = cmd.ExecuteReader();
 
@@ -156,36 +153,36 @@ namespace SOMIOD.Controllers
             });
         }
 
-        public static bool NotExists(string name, string parentName, string grandParentName)
+        public static bool NotExistsRecord(string name, string parentName, string grandParentName)
         {
             return SqlHelper.ConnectionStarter(conn =>
             {
-                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {table} t" +
-                    $" JOIN Containers c ON c.id = t.Containers_Id" +
+                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {recordTable} t" +
+                    $" JOIN Containers c ON c.id = t.Container_Id" +
                     $" JOIN Applications a ON a.id = c.Application_Id" +
-                    $" WHERE t.Name = @name AND c.Name = @parentName AND a.Name = @grandParentName", conn);
+                    $" WHERE t.Name = @name AND c.Name = @parent_name AND a.Name = @grand_parent_name", conn);
                 cmd.Parameters.AddWithValue("@name", name);
-                cmd.Parameters.AddWithValue("@parentName", parentName);
-                cmd.Parameters.AddWithValue("@grandParentName", grandParentName);
-                
+                cmd.Parameters.AddWithValue("@parent_name", parentName);
+                cmd.Parameters.AddWithValue("@grand_parent_name", grandParentName);
+
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 reader.Read();
-                return !reader.GetBoolean(0);
+                return (int)reader[0] == 0;
             });
         }
-        public static bool Exists(string name)
+        public static bool ExistsRecord(string name)
         {
             return SqlHelper.ConnectionStarter(conn =>
             {
-                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {table}" +
+                SqlCommand cmd = new SqlCommand($"SELECT COUNT(*) FROM {recordTable}" +
                     $" WHERE Name = @name", conn);
                 cmd.Parameters.AddWithValue("@name", name);
-                
+
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 reader.Read();
-                return reader.GetBoolean(0);
+                return (int)reader[0] > 0;
             });
         }
     }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Formatting;
 using System.Web.Http;
 
 namespace SomiodApi
@@ -11,7 +12,14 @@ namespace SomiodApi
         public static void Register(HttpConfiguration config)
         {
             // Web API configuration and services
-            config.Formatters.Insert(0, config.Formatters.XmlFormatter);
+            //Clear formatters
+            config.Formatters.Clear();
+            
+            //Xml first to be default
+            config.Formatters.Add(new XmlMediaTypeFormatter());
+            //Json after to be compatible with both formats
+            config.Formatters.Add(new JsonMediaTypeFormatter());
+
             // Web API routes
             config.MapHttpAttributeRoutes();
 
