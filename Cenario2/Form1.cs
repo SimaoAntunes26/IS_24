@@ -73,15 +73,13 @@ namespace Cenario2
                 listBoxChild.Items.Add("No items found.");
         }
 
-        private async void create(string endpoint, object requestBody)
+        private async void create(string endpoint, XDocument xml)
         {
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
-                    // Create the JSON object with the variable name
-                    string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-                    HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+                    HttpContent content = new StringContent(xml.ToString(), Encoding.UTF8, "application/xml");
 
                     // POST application
                     HttpResponseMessage response = await client.PostAsync(url + endpoint, content);
@@ -111,15 +109,13 @@ namespace Cenario2
             }
         }
 
-        private async void update(string endpoint, object requestBody)
+        private async void update(string endpoint, XDocument xml)
         {
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
-                    // Create the JSON object with the variable name
-                    string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-                    HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+                    HttpContent content = new StringContent(xml.ToString(), Encoding.UTF8, "application/xml");
 
                     // PUT application
                     HttpResponseMessage response = await client.PutAsync(url + endpoint, content);
@@ -177,7 +173,7 @@ namespace Cenario2
             appCreationDateLabel.Text = "Date: " + date.InnerText;
         }
 
-        private async void getAppChildren(string locate, ListBox listBoxChild)
+        private void getAppChildren(string locate, ListBox listBoxChild)
         {
             if (appListBox.SelectedItem == null)
             {
@@ -205,12 +201,22 @@ namespace Cenario2
             getAppChildren("notification", notifListBox);
         }
 
-        private async void createAppButton_Click(object sender, EventArgs e)
+        private void createAppButton_Click(object sender, EventArgs e)
         {
-            create("", new { name = createAppNameTextbox.Text });
+            var xml =
+            new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Application", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"), createAppNameTextbox.Text)
+                )
+            );
+
+            create("", xml);
         }
 
-        private async void updateAppButton_Click(object sender, EventArgs e)
+        private void updateAppButton_Click(object sender, EventArgs e)
         {
             if (appListBox.SelectedItem == null)
             {
@@ -220,12 +226,24 @@ namespace Cenario2
 
             string app = appListBox.SelectedItem.ToString();
 
-            update(app, new { name = updateAppNameTexbox.Text.Length == 0 ? null : updateAppNameTexbox.Text });
+            var xml =
+            new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Application", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"), 
+                                            updateAppNameTexbox.Text.Length == 0 ? null : updateAppNameTexbox.Text
+                                          )
+                )
+            );
+
+            update(app, xml);
 
             MessageBox.Show($"Succesfully updated application \'{app}\'");
         }
 
-        private async void deleteAppButton_Click(object sender, EventArgs e)
+        private void deleteAppButton_Click(object sender, EventArgs e)
         {
             if (appListBox.SelectedItem == null)
             {
@@ -272,7 +290,7 @@ namespace Cenario2
             containerCreationDateLabel.Text = "Date: " + date.InnerText;
         }
 
-        private async void getContainerChildren(string locate, ListBox listBoxChild)
+        private void getContainerChildren(string locate, ListBox listBoxChild)
         {
             if (containerListBox.SelectedItem == null)
             {
@@ -309,7 +327,20 @@ namespace Cenario2
                 MessageBox.Show("No parent application: must use \'Get containers\' first");
                 return;
             }
-            create(curApp, new { name = createContainerNameTextbox.Text });
+
+            var xml =
+            new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Container", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                            createContainerNameTextbox.Text
+                                          )
+                )
+            );
+
+            create(curApp, xml);
         }
 
         private void updateContainerButton_Click(object sender, EventArgs e)
@@ -328,7 +359,19 @@ namespace Cenario2
 
             string container = containerListBox.SelectedItem.ToString();
 
-            update(curApp + "/" + container, new { name = updateContainerNameTextbox.Text.Length == 0 ? null : updateContainerNameTextbox.Text });
+            var xml =
+            new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Container", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                            updateContainerNameTextbox.Text.Length == 0 ? null : updateContainerNameTextbox.Text
+                                          )
+                )
+            );
+
+            update(curApp + "/" + container, xml);
 
             MessageBox.Show($"Succesfully updated container \'{container}\'");
         }
