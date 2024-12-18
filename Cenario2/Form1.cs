@@ -26,6 +26,8 @@ namespace Cenario2
             InitializeComponent();
         }
 
+        #region General Use Functions
+
         private async Task<string> getXmlString(string endpoint, string locate)
         {
             try
@@ -51,6 +53,88 @@ namespace Cenario2
                 return null;
             }
         }
+
+        private async void getChildren(string endpoint, string locate, ListBox listBoxChild)
+        {
+            string responseData = await getXmlString(endpoint, locate);
+
+            // Adding containers fetched to listbox
+            listBoxChild.Items.Clear();
+
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNodeList nodes = xmlDoc.GetElementsByTagName("string");
+
+            foreach (XmlNode node in nodes)
+                listBoxChild.Items.Add(node.InnerText);
+
+            if (listBoxChild.Items.Count == 0)
+                listBoxChild.Items.Add("No items found.");
+        }
+
+        private async void create(string endpoint, object requestBody)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Create the JSON object with the variable name
+                    string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+                    HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    // POST application
+                    HttpResponseMessage response = await client.PostAsync(url + endpoint, content);
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void delete(string endpoint)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // DELETE application
+                    HttpResponseMessage response = await client.DeleteAsync(url + endpoint);
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void update(string endpoint, object requestBody)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Create the JSON object with the variable name
+                    string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+                    HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    // PUT application
+                    HttpResponseMessage response = await client.PutAsync(url + endpoint, content);
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        #endregion
+
+        #region Application functions
         private async void getAllAppsButton_Click(object sender, EventArgs e)
         {
             string responseData = await getXmlString("", "application");
@@ -103,24 +187,10 @@ namespace Cenario2
 
             curApp = appListBox.SelectedItem.ToString();
 
-            string responseData = await getXmlString(appListBox.SelectedItem.ToString(), locate);
-
-            // Adding containers fetched to listbox
-            listBoxChild.Items.Clear();
-
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.LoadXml(responseData);
-
-            XmlNodeList nodes = xmlDoc.GetElementsByTagName("string");
-
-            foreach (XmlNode node in nodes)
-                listBoxChild.Items.Add(node.InnerText);
-
-            if (listBoxChild.Items.Count == 0)
-                listBoxChild.Items.Add("No items found.");
+            getChildren(curApp, locate, listBoxChild);
         }
 
-        private async void getAppContainersButton_Click(object sender, EventArgs e)
+        private void getAppContainersButton_Click(object sender, EventArgs e)
         {
             getAppChildren("container", containerListBox);
         }
@@ -137,24 +207,7 @@ namespace Cenario2
 
         private async void createAppButton_Click(object sender, EventArgs e)
         {
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    // Create the JSON object with the variable name
-                    var requestBody = new { name = createAppNameTextbox.Text };
-                    string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-                    HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                    // POST application
-                    HttpResponseMessage response = await client.PostAsync(url, content);
-                    response.EnsureSuccessStatusCode();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            create("", new { name = createAppNameTextbox.Text });
         }
 
         private async void updateAppButton_Click(object sender, EventArgs e)
@@ -167,26 +220,9 @@ namespace Cenario2
 
             string app = appListBox.SelectedItem.ToString();
 
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    // Create the JSON object with the variable name
-                    var requestBody = new { name = updateAppNameTexbox.Text.Length == 0 ? null : updateAppNameTexbox.Text };
-                    string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-                    HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            update(app, new { name = updateAppNameTexbox.Text.Length == 0 ? null : updateAppNameTexbox.Text });
 
-                    // PUT application
-                    HttpResponseMessage response = await client.PutAsync(url + app, content);
-                    response.EnsureSuccessStatusCode();
-
-                    MessageBox.Show($"Succesfully updated application \'{app}\'");
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            MessageBox.Show($"Succesfully updated application \'{app}\'");
         }
 
         private async void deleteAppButton_Click(object sender, EventArgs e)
@@ -199,24 +235,127 @@ namespace Cenario2
 
             string app = appListBox.SelectedItem.ToString();
 
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    // DELETE application
-                    HttpResponseMessage response = await client.DeleteAsync(url + app);
-                    response.EnsureSuccessStatusCode();
+            delete(app);
 
-                    MessageBox.Show($"Succesfully deleted application \'{app}\'");
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            MessageBox.Show($"Succesfully deleted application \'{app}\'");
         }
 
-        // ACCIDENTAL :(
+        #endregion
+
+        #region Container functions
+        private async void getContainerSelectedButton_Click(object sender, EventArgs e)
+        {
+            if (containerListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No container selected from the list!");
+                return;
+            }
+
+            if (curApp == null)
+            {
+                MessageBox.Show("No parent application: must use \'Get containers\' first");
+                return;
+            }
+
+            string responseData = await getXmlString(curApp + "/" + containerListBox.SelectedItem.ToString(), null);
+
+            // Adding fetched application's details to labels
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNode id = xmlDoc.GetElementsByTagName("Id")[0];
+            XmlNode name = xmlDoc.GetElementsByTagName("Name")[0];
+            XmlNode date = xmlDoc.GetElementsByTagName("CreationDatetime")[0];
+
+            containerIdLabel.Text = "Id: " + id.InnerText;
+            containerNameLabel.Text = "Name: " + name.InnerText;
+            containerCreationDateLabel.Text = "Date: " + date.InnerText;
+        }
+
+        private async void getContainerChildren(string locate, ListBox listBoxChild)
+        {
+            if (containerListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No container selected from the list!");
+                return;
+            }
+
+            if (curApp == null)
+            {
+                MessageBox.Show("No parent application: must use \'Get containers\' first");
+                return;
+            }
+
+            curContainer = containerListBox.SelectedItem.ToString();
+
+            getChildren(curApp + "/" + curContainer, locate, listBoxChild);
+        }
+
+
+        private void getContainerRecordsButton_Click(object sender, EventArgs e)
+        {
+            getContainerChildren("record", recordListBox);
+        }
+
+        private void getContainerNotifsButton_Click(object sender, EventArgs e)
+        {
+            getContainerChildren("notification", notifListBox);
+        }
+
+        private void createContainerButton_Click(object sender, EventArgs e)
+        {
+            if (curApp == null)
+            {
+                MessageBox.Show("No parent application: must use \'Get containers\' first");
+                return;
+            }
+            create(curApp, new { name = createContainerNameTextbox.Text });
+        }
+
+        private void updateContainerButton_Click(object sender, EventArgs e)
+        {
+            if (containerListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No container selected from the list!");
+                return;
+            }
+
+            if (curApp == null)
+            {
+                MessageBox.Show("No parent application: must use \'Get containers\' first");
+                return;
+            }
+
+            string container = containerListBox.SelectedItem.ToString();
+
+            update(curApp + "/" + container, new { name = updateContainerNameTextbox.Text.Length == 0 ? null : updateContainerNameTextbox.Text });
+
+            MessageBox.Show($"Succesfully updated container \'{container}\'");
+        }
+
+        private void deleteContainerButton_Click(object sender, EventArgs e)
+        {
+            if (containerListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No container selected from the list!");
+                return;
+            }
+            if (curApp == null)
+            {
+                MessageBox.Show("No parent application: must use \'Get containers\' first");
+                return;
+            }
+
+            string container = containerListBox.SelectedItem.ToString();
+
+            delete(curApp + "/" + container);
+
+            MessageBox.Show($"Succesfully deleted container \'{container}\'");
+        }
+
+        #endregion
+
+        #region Accidental functions by clicking things on form design
         private void appCreationDateLabel_Click(object sender, EventArgs e)
         {
 
@@ -236,7 +375,6 @@ namespace Cenario2
         {
 
         }
-
-        
+        #endregion
     }
 }

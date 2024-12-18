@@ -296,6 +296,7 @@
             this.updateContainerButton.TabIndex = 31;
             this.updateContainerButton.Text = "Update";
             this.updateContainerButton.UseVisualStyleBackColor = true;
+            this.updateContainerButton.Click += new System.EventHandler(this.updateContainerButton_Click);
             // 
             // updateContainerNameTextbox
             // 
@@ -321,6 +322,7 @@
             this.deleteContainerButton.TabIndex = 28;
             this.deleteContainerButton.Text = "Delete";
             this.deleteContainerButton.UseVisualStyleBackColor = true;
+            this.deleteContainerButton.Click += new System.EventHandler(this.deleteContainerButton_Click);
             // 
             // createContainerButton
             // 
@@ -330,6 +332,7 @@
             this.createContainerButton.TabIndex = 27;
             this.createContainerButton.Text = "Create";
             this.createContainerButton.UseVisualStyleBackColor = true;
+            this.createContainerButton.Click += new System.EventHandler(this.createContainerButton_Click);
             // 
             // containerCreationDateLabel
             // 
@@ -366,6 +369,7 @@
             this.getContainerSelectedButton.TabIndex = 23;
             this.getContainerSelectedButton.Text = "Get selected";
             this.getContainerSelectedButton.UseVisualStyleBackColor = true;
+            this.getContainerSelectedButton.Click += new System.EventHandler(this.getContainerSelectedButton_Click);
             // 
             // getContainerNotifsButton
             // 
@@ -375,6 +379,7 @@
             this.getContainerNotifsButton.TabIndex = 22;
             this.getContainerNotifsButton.Text = "Get notifications";
             this.getContainerNotifsButton.UseVisualStyleBackColor = true;
+            this.getContainerNotifsButton.Click += new System.EventHandler(this.getContainerNotifsButton_Click);
             // 
             // getContainerRecordsButton
             // 
@@ -384,6 +389,7 @@
             this.getContainerRecordsButton.TabIndex = 21;
             this.getContainerRecordsButton.Text = "Get records";
             this.getContainerRecordsButton.UseVisualStyleBackColor = true;
+            this.getContainerRecordsButton.Click += new System.EventHandler(this.getContainerRecordsButton_Click);
             // 
             // containerListBox
             // 
