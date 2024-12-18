@@ -93,12 +93,53 @@ namespace Switch
         {
             lightState = true;
             publishState(lightState.ToString());
+            sendRecord();
         }
 
         private void turnOffButton_Click(object sender, EventArgs e)
         {
             lightState = false;
             publishState(lightState.ToString());
+            sendRecord();
+        }
+
+        private void sendRecord()
+        {
+            Record record = new Record();
+            if (lightState)
+            {
+                record.Content = "on";
+            }
+            else
+            {
+                record.Content = "off";
+            }
+            try
+            {
+                string xmlData = SerializeToXml(record);
+
+                var client = new RestClient(baseURI);
+                var request = new RestRequest();
+
+                request.Method = Method.Post;
+                request.AddHeader("Content-Type", "record/xml;charset=utf-8");
+                request.AddParameter("record/xml", xmlData, ParameterType.RequestBody);
+
+                var response = client.Execute(request);
+
+                if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created)
+                {
+                    System.Windows.Forms.MessageBox.Show("Record successfully sent!");
+                }
+                else
+                {
+                    System.Windows.Forms.MessageBox.Show($"Error: {response.StatusCode} - {response.Content}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Exception: {ex.Message}");
+            }
         }
     }
 }
