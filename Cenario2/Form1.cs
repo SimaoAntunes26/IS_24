@@ -12,6 +12,7 @@ using System.Xml.Linq;
 using System.Xml;
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
 namespace Cenario2
 {
@@ -232,9 +233,8 @@ namespace Cenario2
                 new XElement(
                     XName.Get("Application", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
                     new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
-                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"), 
-                                            updateAppNameTexbox.Text.Length == 0 ? null : updateAppNameTexbox.Text
-                                          )
+                    updateAppNameTexbox.Text.Length == 0 ? null : 
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"), updateAppNameTexbox.Text)
                 )
             );
 
@@ -277,7 +277,7 @@ namespace Cenario2
 
             string responseData = await getXmlString(curApp + "/" + containerListBox.SelectedItem.ToString(), null);
 
-            // Adding fetched application's details to labels
+            // Adding fetched containers's details to labels
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.LoadXml(responseData);
 
@@ -365,9 +365,8 @@ namespace Cenario2
                 new XElement(
                     XName.Get("Container", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
                     new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
-                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
-                                            updateContainerNameTextbox.Text.Length == 0 ? null : updateContainerNameTextbox.Text
-                                          )
+                    updateContainerNameTextbox.Text.Length == 0 ? null : 
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),updateContainerNameTextbox.Text)
                 )
             );
 
@@ -398,25 +397,183 @@ namespace Cenario2
 
         #endregion
 
-        #region Accidental functions by clicking things on form design
-        private void appCreationDateLabel_Click(object sender, EventArgs e)
+        #region Record functions
+        private async void getRecordSelectedButton_Click(object sender, EventArgs e)
         {
+            if (recordListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No record selected from the list!");
+                return;
+            }
 
+            if (curApp == null || curContainer == null)
+            {
+                MessageBox.Show("No parent application and/or container: must use \'Get containers\' (Application) and \'Get records\' (Container) first");
+                return;
+            }
+
+            string responseData = await getXmlString(curApp + "/" + curContainer + "/record/" + recordListBox.SelectedItem.ToString(), null);
+
+            // Adding fetched records's details to labels
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNode id = xmlDoc.GetElementsByTagName("Id")[0];
+            XmlNode name = xmlDoc.GetElementsByTagName("Name")[0];
+            XmlNode date = xmlDoc.GetElementsByTagName("CreationDatetime")[0];
+            XmlNode content = xmlDoc.GetElementsByTagName("Content")[0];
+
+            recordIdLabel.Text = "Id: " + id.InnerText;
+            recordNameLabel.Text = "Name: " + name.InnerText;
+            recordCreationDateLabel.Text = "Date: " + date.InnerText;
+            recordContentTextbox.Text = content.InnerText;
         }
 
-        private void appNameLabel_Click(object sender, EventArgs e)
+        private void createRecordButton_Click(object sender, EventArgs e)
         {
+            if (curApp == null || curContainer == null)
+            {
+                MessageBox.Show("No parent application and/or container: must use \'Get containers\' (Application) and \'Get records\' (Container) first");
+                return;
+            }
 
+            var xml =
+            new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Record", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                            createRecordNameTextbox.Text
+                                          ),
+                    new XElement(XName.Get("Content", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                            createRecordContentTextbox.Text
+                                          )
+                )
+            );
+
+            create(curApp + "/" + curContainer + "/record/", xml);
         }
 
-        private void appIdLabel_Click(object sender, EventArgs e)
+        private void deleteRecordButton_Click(object sender, EventArgs e)
         {
+            if (recordListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No record selected from the list!");
+                return;
+            }
 
+            if (curApp == null || curContainer == null)
+            {
+                MessageBox.Show("No parent application and/or container: must use \'Get containers\' (Application) and \'Get records\' (Container) first");
+                return;
+            }
+
+            string record = recordListBox.SelectedItem.ToString();
+
+            delete(curApp + "/" + curContainer + "/record/" + record);
+
+            MessageBox.Show($"Succesfully deleted container \'{record}\'");
+        }
+        #endregion
+
+        #region Notif functions
+        private void createNotifButton_Click(object sender, EventArgs e)
+        {
+            if (curApp == null || curContainer == null)
+            {
+                MessageBox.Show("No parent application and/or container: must use \'Get containers\' (Application) and \'Get records\' (Container) first");
+                return;
+            }
+
+            string notif_event = null;
+            foreach (Control control in createNotifRadioGroup.Controls)
+            {
+                if (control is System.Windows.Forms.RadioButton radioButton && radioButton.Checked)
+                {
+                    notif_event = radioButton.Text; // Return the Text property of the selected RadioButton
+                }
+            }
+
+            if (notif_event == null)
+            {
+                MessageBox.Show("No event type selected");
+                return;
+            }
+
+            var xml =
+            new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Notification", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                            createNotifNameTextbox.Text
+                                          ),
+                    new XElement(XName.Get("Endpoint", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                            createNotifEndpointTextbox.Text
+                                          ),
+                    new XElement(XName.Get("Event", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                            notif_event.ToLower()
+                                          )
+                )
+            );
+
+            create(curApp + "/" + curContainer + "/notif/", xml);
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private async void getNotifSelectedButton_Click(object sender, EventArgs e)
         {
+            if (notifListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No notifications selected from the list!");
+                return;
+            }
 
+            if (curApp == null || curContainer == null)
+            {
+                MessageBox.Show("No parent application and/or container: must use \'Get containers\' (Application) and \'Get records\' (Container) first");
+                return;
+            }
+
+            string responseData = await getXmlString(curApp + "/" + curContainer + "/notif/" + notifListBox.SelectedItem.ToString(), null);
+
+            // Adding fetched notif's details to labels
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNode id = xmlDoc.GetElementsByTagName("Id")[0];
+            XmlNode name = xmlDoc.GetElementsByTagName("Name")[0];
+            XmlNode date = xmlDoc.GetElementsByTagName("CreationDatetime")[0];
+            XmlNode notif_event = xmlDoc.GetElementsByTagName("Event")[0];
+            XmlNode endpoint = xmlDoc.GetElementsByTagName("Endpoint")[0];
+
+            notifIdLabel.Text = "Id: " + id.InnerText;
+            notifNameLabel.Text = "Name: " + name.InnerText;
+            notifCreationDateLabel.Text = "Date: " + date.InnerText;
+            notifEventLabel.Text = "Event: " + notif_event.InnerText;
+            notifEndpointLabel.Text = "Endpoint: " + endpoint.InnerText;
+        }
+
+        private void deleteNotifButton_Click(object sender, EventArgs e)
+        {
+            if (notifListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No notification selected from the list!");
+                return;
+            }
+
+            if (curApp == null || curContainer == null)
+            {
+                MessageBox.Show("No parent application and/or container: must use \'Get containers\' (Application) and \'Get records\' (Container) first");
+                return;
+            }
+
+            string notif = notifListBox.SelectedItem.ToString();
+
+            delete(curApp + "/" + curContainer + "/notif/" + notif);
+
+            MessageBox.Show($"Succesfully deleted container \'{notif}\'");
         }
         #endregion
     }
