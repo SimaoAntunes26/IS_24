@@ -4,34 +4,219 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
+using System.Xml;
+using System.Collections.Specialized;
+using System.Runtime.CompilerServices;
 
 namespace Cenario2
 {
     public partial class Form1 : Form
     {
+        private string curApp = null;
+        private string curContainer = null;
+        private string url = "http://localhost:50669/api/somiod/";
+
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void getAppContainersButton_Click(object sender, EventArgs e)
+        private async Task<string> getXmlString(string endpoint, string locate)
         {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // GET ALL from API
+                    if (locate != null)
+                        client.DefaultRequestHeaders.Add("somiod-locate", locate);
+                    
 
+                    HttpResponseMessage response = await client.GetAsync(url + endpoint);
+
+                    response.EnsureSuccessStatusCode();
+                    string responseData = await response.Content.ReadAsStringAsync(); // XML string
+
+                    return responseData;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
+        }
+        private async void getAllAppsButton_Click(object sender, EventArgs e)
+        {
+            string responseData = await getXmlString("", "application");
+
+            // Adding applications fetched to listbox
+            appListBox.Items.Clear();
+
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNodeList nodes = xmlDoc.GetElementsByTagName("string");
+
+            foreach (XmlNode node in nodes)
+                appListBox.Items.Add(node.InnerText);
+
+            if (appListBox.Items.Count == 0)
+                appListBox.Items.Add("No items found.");
+        }
+
+        private async void getAppSelectedButton_Click(object sender, EventArgs e)
+        {
+            if(appListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No application selected from the list!");
+                return;
+            }
+
+            string responseData = await getXmlString(appListBox.SelectedItem.ToString(), null);
+
+            // Adding fetched application's details to labels
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+                    
+            XmlNode id = xmlDoc.GetElementsByTagName("Id")[0];
+            XmlNode name = xmlDoc.GetElementsByTagName("Name")[0];
+            XmlNode date = xmlDoc.GetElementsByTagName("CreationDatetime")[0];
+
+            appIdLabel.Text = "Id: " + id.InnerText;
+            appNameLabel.Text = "Name: " + name.InnerText;
+            appCreationDateLabel.Text = "Date: " + date.InnerText;
+        }
+
+        private async void getAppChildren(string locate, ListBox listBoxChild)
+        {
+            if (appListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No application selected from the list!");
+                return;
+            }
+
+            curApp = appListBox.SelectedItem.ToString();
+
+            string responseData = await getXmlString(appListBox.SelectedItem.ToString(), locate);
+
+            // Adding containers fetched to listbox
+            listBoxChild.Items.Clear();
+
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNodeList nodes = xmlDoc.GetElementsByTagName("string");
+
+            foreach (XmlNode node in nodes)
+                listBoxChild.Items.Add(node.InnerText);
+
+            if (listBoxChild.Items.Count == 0)
+                listBoxChild.Items.Add("No items found.");
+        }
+
+        private async void getAppContainersButton_Click(object sender, EventArgs e)
+        {
+            getAppChildren("container", containerListBox);
         }
 
         private void getAppRecordsButton_Click(object sender, EventArgs e)
         {
-
+            getAppChildren("record", recordListBox);
         }
 
         private void getAppNotifsButton_Click(object sender, EventArgs e)
         {
-
+            getAppChildren("notification", notifListBox);
         }
 
+        private async void createAppButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Create the JSON object with the variable name
+                    var requestBody = new { name = createAppNameTextbox.Text };
+                    string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+                    HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    // POST application
+                    HttpResponseMessage response = await client.PostAsync(url, content);
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void updateAppButton_Click(object sender, EventArgs e)
+        {
+            if (appListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No application selected from the list!");
+                return;
+            }
+
+            string app = appListBox.SelectedItem.ToString();
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Create the JSON object with the variable name
+                    var requestBody = new { name = updateAppNameTexbox.Text.Length == 0 ? null : updateAppNameTexbox.Text };
+                    string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+                    HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    // PUT application
+                    HttpResponseMessage response = await client.PutAsync(url + app, content);
+                    response.EnsureSuccessStatusCode();
+
+                    MessageBox.Show($"Succesfully updated application \'{app}\'");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void deleteAppButton_Click(object sender, EventArgs e)
+        {
+            if (appListBox.SelectedItem == null)
+            {
+                MessageBox.Show("No application selected from the list!");
+                return;
+            }
+
+            string app = appListBox.SelectedItem.ToString();
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // DELETE application
+                    HttpResponseMessage response = await client.DeleteAsync(url + app);
+                    response.EnsureSuccessStatusCode();
+
+                    MessageBox.Show($"Succesfully deleted application \'{app}\'");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ACCIDENTAL :(
         private void appCreationDateLabel_Click(object sender, EventArgs e)
         {
 
@@ -52,144 +237,6 @@ namespace Cenario2
 
         }
 
-        private void button7_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label6_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label5_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label4_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label7_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label3_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button5_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button6_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label12_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button14_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button10_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label11_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label10_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label9_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button11_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void textBox2_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label8_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button12_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button13_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button9_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button8_Click(object sender, EventArgs e)
-        {
-
-        }
+        
     }
 }

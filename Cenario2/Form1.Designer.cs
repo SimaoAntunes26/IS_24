@@ -73,10 +73,10 @@
             this.getRecordSelectedButton = new System.Windows.Forms.Button();
             this.recordListBox = new System.Windows.Forms.ListBox();
             this.label15 = new System.Windows.Forms.Label();
-            this.textBox5 = new System.Windows.Forms.TextBox();
+            this.createNotifNameTextbox = new System.Windows.Forms.TextBox();
             this.label16 = new System.Windows.Forms.Label();
             this.updateNotifButton = new System.Windows.Forms.Button();
-            this.textBox6 = new System.Windows.Forms.TextBox();
+            this.updateNotifNameTextbox = new System.Windows.Forms.TextBox();
             this.label17 = new System.Windows.Forms.Label();
             this.deleteNotifButton = new System.Windows.Forms.Button();
             this.createNotifButton = new System.Windows.Forms.Button();
@@ -92,14 +92,33 @@
             this.createRecordContentTextbox = new System.Windows.Forms.TextBox();
             this.label8 = new System.Windows.Forms.Label();
             this.updateRecordContentTextbox = new System.Windows.Forms.TextBox();
+            this.notifEventLabel = new System.Windows.Forms.Label();
+            this.notifEndpointLabel = new System.Windows.Forms.Label();
+            this.label12 = new System.Windows.Forms.Label();
+            this.createNotifEventCreationRadio = new System.Windows.Forms.RadioButton();
+            this.createNotifEventBothRadio = new System.Windows.Forms.RadioButton();
+            this.createNotifEventDeletionRadio = new System.Windows.Forms.RadioButton();
+            this.label13 = new System.Windows.Forms.Label();
+            this.createNotifEndpointTextbox = new System.Windows.Forms.TextBox();
+            this.label14 = new System.Windows.Forms.Label();
+            this.updateNotifEndpointTextbox = new System.Windows.Forms.TextBox();
+            this.label18 = new System.Windows.Forms.Label();
+            this.createNotifRadioGroup = new System.Windows.Forms.GroupBox();
+            this.updateNotifEventBothRadio = new System.Windows.Forms.RadioButton();
+            this.updateNotifEventDeletionRadio = new System.Windows.Forms.RadioButton();
+            this.updateNotifEventCreationRadio = new System.Windows.Forms.RadioButton();
+            this.updateNotifRadioGroup = new System.Windows.Forms.GroupBox();
+            this.createNotifRadioGroup.SuspendLayout();
+            this.updateNotifRadioGroup.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.Location = new System.Drawing.Point(13, 13);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(67, 13);
+            this.label1.Size = new System.Drawing.Size(80, 13);
             this.label1.TabIndex = 0;
             this.label1.Text = "Applications:";
             // 
@@ -119,6 +138,7 @@
             this.getAllAppsButton.TabIndex = 2;
             this.getAllAppsButton.Text = "Get all";
             this.getAllAppsButton.UseVisualStyleBackColor = true;
+            this.getAllAppsButton.Click += new System.EventHandler(this.getAllAppsButton_Click);
             // 
             // getAppContainersButton
             // 
@@ -158,6 +178,7 @@
             this.getAppSelectedButton.TabIndex = 6;
             this.getAppSelectedButton.Text = "Get selected";
             this.getAppSelectedButton.UseVisualStyleBackColor = true;
+            this.getAppSelectedButton.Click += new System.EventHandler(this.getAppSelectedButton_Click);
             // 
             // appIdLabel
             // 
@@ -197,6 +218,7 @@
             this.createAppButton.TabIndex = 10;
             this.createAppButton.Text = "Create";
             this.createAppButton.UseVisualStyleBackColor = true;
+            this.createAppButton.Click += new System.EventHandler(this.createAppButton_Click);
             // 
             // deleteAppButton
             // 
@@ -206,6 +228,7 @@
             this.deleteAppButton.TabIndex = 11;
             this.deleteAppButton.Text = "Delete";
             this.deleteAppButton.UseVisualStyleBackColor = true;
+            this.deleteAppButton.Click += new System.EventHandler(this.deleteAppButton_Click);
             // 
             // label2
             // 
@@ -231,6 +254,7 @@
             this.updateAppButton.TabIndex = 14;
             this.updateAppButton.Text = "Update";
             this.updateAppButton.UseVisualStyleBackColor = true;
+            this.updateAppButton.Click += new System.EventHandler(this.updateAppButton_Click);
             // 
             // label3
             // 
@@ -372,9 +396,10 @@
             // label9
             // 
             this.label9.AutoSize = true;
+            this.label9.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label9.Location = new System.Drawing.Point(13, 205);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(60, 13);
+            this.label9.Size = new System.Drawing.Size(71, 13);
             this.label9.TabIndex = 17;
             this.label9.Text = "Containers:";
             // 
@@ -484,18 +509,19 @@
             // label15
             // 
             this.label15.AutoSize = true;
+            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label15.Location = new System.Drawing.Point(12, 397);
             this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(50, 13);
+            this.label15.Size = new System.Drawing.Size(58, 13);
             this.label15.TabIndex = 34;
             this.label15.Text = "Records:";
             // 
-            // textBox5
+            // createNotifNameTextbox
             // 
-            this.textBox5.Location = new System.Drawing.Point(176, 700);
-            this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(131, 20);
-            this.textBox5.TabIndex = 67;
+            this.createNotifNameTextbox.Location = new System.Drawing.Point(177, 702);
+            this.createNotifNameTextbox.Name = "createNotifNameTextbox";
+            this.createNotifNameTextbox.Size = new System.Drawing.Size(131, 20);
+            this.createNotifNameTextbox.TabIndex = 67;
             // 
             // label16
             // 
@@ -508,24 +534,24 @@
             // 
             // updateNotifButton
             // 
-            this.updateNotifButton.Location = new System.Drawing.Point(15, 728);
+            this.updateNotifButton.Location = new System.Drawing.Point(16, 782);
             this.updateNotifButton.Name = "updateNotifButton";
             this.updateNotifButton.Size = new System.Drawing.Size(88, 22);
             this.updateNotifButton.TabIndex = 65;
             this.updateNotifButton.Text = "Update";
             this.updateNotifButton.UseVisualStyleBackColor = true;
             // 
-            // textBox6
+            // updateNotifNameTextbox
             // 
-            this.textBox6.Location = new System.Drawing.Point(176, 728);
-            this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(131, 20);
-            this.textBox6.TabIndex = 64;
+            this.updateNotifNameTextbox.Location = new System.Drawing.Point(177, 782);
+            this.updateNotifNameTextbox.Name = "updateNotifNameTextbox";
+            this.updateNotifNameTextbox.Size = new System.Drawing.Size(131, 20);
+            this.updateNotifNameTextbox.TabIndex = 64;
             // 
             // label17
             // 
             this.label17.AutoSize = true;
-            this.label17.Location = new System.Drawing.Point(109, 733);
+            this.label17.Location = new System.Drawing.Point(107, 787);
             this.label17.Name = "label17";
             this.label17.Size = new System.Drawing.Size(61, 13);
             this.label17.TabIndex = 63;
@@ -533,7 +559,7 @@
             // 
             // deleteNotifButton
             // 
-            this.deleteNotifButton.Location = new System.Drawing.Point(15, 756);
+            this.deleteNotifButton.Location = new System.Drawing.Point(16, 849);
             this.deleteNotifButton.Name = "deleteNotifButton";
             this.deleteNotifButton.Size = new System.Drawing.Size(88, 22);
             this.deleteNotifButton.TabIndex = 62;
@@ -590,15 +616,16 @@
             this.notifListBox.FormattingEnabled = true;
             this.notifListBox.Location = new System.Drawing.Point(431, 616);
             this.notifListBox.Name = "notifListBox";
-            this.notifListBox.Size = new System.Drawing.Size(263, 160);
+            this.notifListBox.Size = new System.Drawing.Size(263, 251);
             this.notifListBox.TabIndex = 52;
             // 
             // label21
             // 
             this.label21.AutoSize = true;
+            this.label21.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label21.Location = new System.Drawing.Point(12, 589);
             this.label21.Name = "label21";
-            this.label21.Size = new System.Drawing.Size(68, 13);
+            this.label21.Size = new System.Drawing.Size(82, 13);
             this.label21.TabIndex = 51;
             this.label21.Text = "Notifications:";
             // 
@@ -651,21 +678,187 @@
             this.updateRecordContentTextbox.Size = new System.Drawing.Size(66, 20);
             this.updateRecordContentTextbox.TabIndex = 73;
             // 
+            // notifEventLabel
+            // 
+            this.notifEventLabel.AutoSize = true;
+            this.notifEventLabel.Location = new System.Drawing.Point(13, 643);
+            this.notifEventLabel.Name = "notifEventLabel";
+            this.notifEventLabel.Size = new System.Drawing.Size(38, 13);
+            this.notifEventLabel.TabIndex = 74;
+            this.notifEventLabel.Text = "Event:";
+            // 
+            // notifEndpointLabel
+            // 
+            this.notifEndpointLabel.AutoSize = true;
+            this.notifEndpointLabel.Location = new System.Drawing.Point(12, 666);
+            this.notifEndpointLabel.Name = "notifEndpointLabel";
+            this.notifEndpointLabel.Size = new System.Drawing.Size(52, 13);
+            this.notifEndpointLabel.TabIndex = 75;
+            this.notifEndpointLabel.Text = "Endpoint:";
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(110, 729);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(38, 13);
+            this.label12.TabIndex = 76;
+            this.label12.Text = "Event:";
+            // 
+            // createNotifEventCreationRadio
+            // 
+            this.createNotifEventCreationRadio.AutoSize = true;
+            this.createNotifEventCreationRadio.Location = new System.Drawing.Point(6, 1);
+            this.createNotifEventCreationRadio.Name = "createNotifEventCreationRadio";
+            this.createNotifEventCreationRadio.Size = new System.Drawing.Size(64, 17);
+            this.createNotifEventCreationRadio.TabIndex = 77;
+            this.createNotifEventCreationRadio.TabStop = true;
+            this.createNotifEventCreationRadio.Text = "Creation";
+            this.createNotifEventCreationRadio.UseVisualStyleBackColor = true;
+            // 
+            // createNotifEventBothRadio
+            // 
+            this.createNotifEventBothRadio.AutoSize = true;
+            this.createNotifEventBothRadio.Location = new System.Drawing.Point(146, 0);
+            this.createNotifEventBothRadio.Name = "createNotifEventBothRadio";
+            this.createNotifEventBothRadio.Size = new System.Drawing.Size(47, 17);
+            this.createNotifEventBothRadio.TabIndex = 78;
+            this.createNotifEventBothRadio.TabStop = true;
+            this.createNotifEventBothRadio.Text = "Both";
+            this.createNotifEventBothRadio.UseVisualStyleBackColor = true;
+            // 
+            // createNotifEventDeletionRadio
+            // 
+            this.createNotifEventDeletionRadio.AutoSize = true;
+            this.createNotifEventDeletionRadio.Location = new System.Drawing.Point(76, 1);
+            this.createNotifEventDeletionRadio.Name = "createNotifEventDeletionRadio";
+            this.createNotifEventDeletionRadio.Size = new System.Drawing.Size(64, 17);
+            this.createNotifEventDeletionRadio.TabIndex = 79;
+            this.createNotifEventDeletionRadio.TabStop = true;
+            this.createNotifEventDeletionRadio.Text = "Deletion";
+            this.createNotifEventDeletionRadio.UseVisualStyleBackColor = true;
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(109, 754);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(52, 13);
+            this.label13.TabIndex = 80;
+            this.label13.Text = "Endpoint:";
+            // 
+            // createNotifEndpointTextbox
+            // 
+            this.createNotifEndpointTextbox.Location = new System.Drawing.Point(177, 751);
+            this.createNotifEndpointTextbox.Name = "createNotifEndpointTextbox";
+            this.createNotifEndpointTextbox.Size = new System.Drawing.Size(131, 20);
+            this.createNotifEndpointTextbox.TabIndex = 81;
+            // 
+            // label14
+            // 
+            this.label14.AutoSize = true;
+            this.label14.Location = new System.Drawing.Point(107, 813);
+            this.label14.Name = "label14";
+            this.label14.Size = new System.Drawing.Size(38, 13);
+            this.label14.TabIndex = 82;
+            this.label14.Text = "Event:";
+            // 
+            // updateNotifEndpointTextbox
+            // 
+            this.updateNotifEndpointTextbox.Location = new System.Drawing.Point(175, 832);
+            this.updateNotifEndpointTextbox.Name = "updateNotifEndpointTextbox";
+            this.updateNotifEndpointTextbox.Size = new System.Drawing.Size(131, 20);
+            this.updateNotifEndpointTextbox.TabIndex = 87;
+            // 
+            // label18
+            // 
+            this.label18.AutoSize = true;
+            this.label18.Location = new System.Drawing.Point(107, 835);
+            this.label18.Name = "label18";
+            this.label18.Size = new System.Drawing.Size(52, 13);
+            this.label18.TabIndex = 86;
+            this.label18.Text = "Endpoint:";
+            // 
+            // createNotifRadioGroup
+            // 
+            this.createNotifRadioGroup.Controls.Add(this.createNotifEventCreationRadio);
+            this.createNotifRadioGroup.Controls.Add(this.createNotifEventDeletionRadio);
+            this.createNotifRadioGroup.Controls.Add(this.createNotifEventBothRadio);
+            this.createNotifRadioGroup.Location = new System.Drawing.Point(174, 727);
+            this.createNotifRadioGroup.Name = "createNotifRadioGroup";
+            this.createNotifRadioGroup.Size = new System.Drawing.Size(214, 16);
+            this.createNotifRadioGroup.TabIndex = 88;
+            this.createNotifRadioGroup.TabStop = false;
+            // 
+            // updateNotifEventBothRadio
+            // 
+            this.updateNotifEventBothRadio.AutoSize = true;
+            this.updateNotifEventBothRadio.Location = new System.Drawing.Point(140, 1);
+            this.updateNotifEventBothRadio.Name = "updateNotifEventBothRadio";
+            this.updateNotifEventBothRadio.Size = new System.Drawing.Size(47, 17);
+            this.updateNotifEventBothRadio.TabIndex = 84;
+            this.updateNotifEventBothRadio.TabStop = true;
+            this.updateNotifEventBothRadio.Text = "Both";
+            this.updateNotifEventBothRadio.UseVisualStyleBackColor = true;
+            // 
+            // updateNotifEventDeletionRadio
+            // 
+            this.updateNotifEventDeletionRadio.AutoSize = true;
+            this.updateNotifEventDeletionRadio.Location = new System.Drawing.Point(70, 1);
+            this.updateNotifEventDeletionRadio.Name = "updateNotifEventDeletionRadio";
+            this.updateNotifEventDeletionRadio.Size = new System.Drawing.Size(64, 17);
+            this.updateNotifEventDeletionRadio.TabIndex = 85;
+            this.updateNotifEventDeletionRadio.TabStop = true;
+            this.updateNotifEventDeletionRadio.Text = "Deletion";
+            this.updateNotifEventDeletionRadio.UseVisualStyleBackColor = true;
+            // 
+            // updateNotifEventCreationRadio
+            // 
+            this.updateNotifEventCreationRadio.AutoSize = true;
+            this.updateNotifEventCreationRadio.Location = new System.Drawing.Point(0, 1);
+            this.updateNotifEventCreationRadio.Name = "updateNotifEventCreationRadio";
+            this.updateNotifEventCreationRadio.Size = new System.Drawing.Size(64, 17);
+            this.updateNotifEventCreationRadio.TabIndex = 83;
+            this.updateNotifEventCreationRadio.TabStop = true;
+            this.updateNotifEventCreationRadio.Text = "Creation";
+            this.updateNotifEventCreationRadio.UseVisualStyleBackColor = true;
+            // 
+            // updateNotifRadioGroup
+            // 
+            this.updateNotifRadioGroup.Controls.Add(this.updateNotifEventCreationRadio);
+            this.updateNotifRadioGroup.Controls.Add(this.updateNotifEventDeletionRadio);
+            this.updateNotifRadioGroup.Controls.Add(this.updateNotifEventBothRadio);
+            this.updateNotifRadioGroup.Location = new System.Drawing.Point(176, 808);
+            this.updateNotifRadioGroup.Name = "updateNotifRadioGroup";
+            this.updateNotifRadioGroup.Size = new System.Drawing.Size(199, 18);
+            this.updateNotifRadioGroup.TabIndex = 89;
+            this.updateNotifRadioGroup.TabStop = false;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(707, 883);
+            this.Controls.Add(this.updateNotifRadioGroup);
+            this.Controls.Add(this.createNotifRadioGroup);
+            this.Controls.Add(this.updateNotifEndpointTextbox);
+            this.Controls.Add(this.label18);
+            this.Controls.Add(this.label14);
+            this.Controls.Add(this.createNotifEndpointTextbox);
+            this.Controls.Add(this.label13);
+            this.Controls.Add(this.label12);
+            this.Controls.Add(this.notifEndpointLabel);
+            this.Controls.Add(this.notifEventLabel);
             this.Controls.Add(this.updateRecordContentTextbox);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.createRecordContentTextbox);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.recordContentTextbox);
             this.Controls.Add(this.label6);
-            this.Controls.Add(this.textBox5);
+            this.Controls.Add(this.createNotifNameTextbox);
             this.Controls.Add(this.label16);
             this.Controls.Add(this.updateNotifButton);
-            this.Controls.Add(this.textBox6);
+            this.Controls.Add(this.updateNotifNameTextbox);
             this.Controls.Add(this.label17);
             this.Controls.Add(this.deleteNotifButton);
             this.Controls.Add(this.createNotifButton);
@@ -723,6 +916,10 @@
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.createNotifRadioGroup.ResumeLayout(false);
+            this.createNotifRadioGroup.PerformLayout();
+            this.updateNotifRadioGroup.ResumeLayout(false);
+            this.updateNotifRadioGroup.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -775,10 +972,10 @@
         private System.Windows.Forms.Button getRecordSelectedButton;
         private System.Windows.Forms.ListBox recordListBox;
         private System.Windows.Forms.Label label15;
-        private System.Windows.Forms.TextBox textBox5;
+        private System.Windows.Forms.TextBox createNotifNameTextbox;
         private System.Windows.Forms.Label label16;
         private System.Windows.Forms.Button updateNotifButton;
-        private System.Windows.Forms.TextBox textBox6;
+        private System.Windows.Forms.TextBox updateNotifNameTextbox;
         private System.Windows.Forms.Label label17;
         private System.Windows.Forms.Button deleteNotifButton;
         private System.Windows.Forms.Button createNotifButton;
@@ -794,6 +991,22 @@
         private System.Windows.Forms.TextBox createRecordContentTextbox;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.TextBox updateRecordContentTextbox;
+        private System.Windows.Forms.Label notifEventLabel;
+        private System.Windows.Forms.Label notifEndpointLabel;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.RadioButton createNotifEventCreationRadio;
+        private System.Windows.Forms.RadioButton createNotifEventBothRadio;
+        private System.Windows.Forms.RadioButton createNotifEventDeletionRadio;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.TextBox createNotifEndpointTextbox;
+        private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.TextBox updateNotifEndpointTextbox;
+        private System.Windows.Forms.Label label18;
+        private System.Windows.Forms.GroupBox createNotifRadioGroup;
+        private System.Windows.Forms.RadioButton updateNotifEventBothRadio;
+        private System.Windows.Forms.RadioButton updateNotifEventDeletionRadio;
+        private System.Windows.Forms.RadioButton updateNotifEventCreationRadio;
+        private System.Windows.Forms.GroupBox updateNotifRadioGroup;
     }
 }
 
