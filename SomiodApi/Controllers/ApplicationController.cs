@@ -61,9 +61,20 @@ namespace SOMIOD.Controllers
         [Route("")]
         public IEnumerable<string> GetAllApplicationLocate()
         {
-            if (Request.Headers.Contains(specialHeader) && Request.Headers.GetValues(specialHeader).First() == "application")
+            if (Request.Headers.Contains(specialHeader))
             {
-                return SqlHelper.GetChildsOfType(LocateType.APPLICATIONS, null);
+                switch (Request.Headers.GetValues(specialHeader).First())
+                {
+                    case "application":
+                        return SqlHelper.GetChildsOfType(LocateType.APPLICATIONS, null);
+                    case "container":
+                        return SqlHelper.GetChildsOfType(LocateType.CONTAINERS, null);
+                    case "record":
+                        return SqlHelper.GetChildsOfType(LocateType.RECORDS, null);
+                    case "notification":
+                        return SqlHelper.GetChildsOfType(LocateType.NOTIFICATIONS, null);
+                }
+                
             }
 
             return new List<string>();

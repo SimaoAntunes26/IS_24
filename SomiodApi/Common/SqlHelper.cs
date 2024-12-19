@@ -19,6 +19,15 @@ namespace SOMIOD.Common
                 case LocateType.APPLICATIONS:
                     cmd.CommandText = "SELECT Name FROM Applications";
                     break;
+                case LocateType.CONTAINERS:
+                    cmd.CommandText = "SELECT Name FROM Containers";
+                    break;
+                case LocateType.RECORDS:
+                    cmd.CommandText = "SELECT Name FROM Records";
+                    break;
+                case LocateType.NOTIFICATIONS:
+                    cmd.CommandText = "SELECT Name FROM Notifications";
+                    break;
                 case LocateType.APP_CONTAINERS:
                     cmd.CommandText = "SELECT c.Name FROM Containers c " +
                         "JOIN Applications a ON a.Id = c.Application_Id " +
