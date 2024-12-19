@@ -93,6 +93,9 @@
             this.label13 = new System.Windows.Forms.Label();
             this.createNotifEndpointTextbox = new System.Windows.Forms.TextBox();
             this.createNotifRadioGroup = new System.Windows.Forms.GroupBox();
+            this.getAllContainersButton = new System.Windows.Forms.Button();
+            this.getAllRecordsButton = new System.Windows.Forms.Button();
+            this.getAllNotificationsButton = new System.Windows.Forms.Button();
             this.createNotifRadioGroup.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -344,9 +347,9 @@
             // 
             // getContainerSelectedButton
             // 
-            this.getContainerSelectedButton.Location = new System.Drawing.Point(16, 232);
+            this.getContainerSelectedButton.Location = new System.Drawing.Point(110, 232);
             this.getContainerSelectedButton.Name = "getContainerSelectedButton";
-            this.getContainerSelectedButton.Size = new System.Drawing.Size(182, 22);
+            this.getContainerSelectedButton.Size = new System.Drawing.Size(88, 22);
             this.getContainerSelectedButton.TabIndex = 23;
             this.getContainerSelectedButton.Text = "Get selected";
             this.getContainerSelectedButton.UseVisualStyleBackColor = true;
@@ -455,9 +458,9 @@
             // 
             // getRecordSelectedButton
             // 
-            this.getRecordSelectedButton.Location = new System.Drawing.Point(16, 424);
+            this.getRecordSelectedButton.Location = new System.Drawing.Point(110, 424);
             this.getRecordSelectedButton.Name = "getRecordSelectedButton";
-            this.getRecordSelectedButton.Size = new System.Drawing.Size(181, 22);
+            this.getRecordSelectedButton.Size = new System.Drawing.Size(87, 22);
             this.getRecordSelectedButton.TabIndex = 40;
             this.getRecordSelectedButton.Text = "Get selected";
             this.getRecordSelectedButton.UseVisualStyleBackColor = true;
@@ -546,9 +549,9 @@
             // 
             // getNotifSelectedButton
             // 
-            this.getNotifSelectedButton.Location = new System.Drawing.Point(16, 616);
+            this.getNotifSelectedButton.Location = new System.Drawing.Point(110, 616);
             this.getNotifSelectedButton.Name = "getNotifSelectedButton";
-            this.getNotifSelectedButton.Size = new System.Drawing.Size(181, 22);
+            this.getNotifSelectedButton.Size = new System.Drawing.Size(87, 22);
             this.getNotifSelectedButton.TabIndex = 57;
             this.getNotifSelectedButton.Text = "Get selected";
             this.getNotifSelectedButton.UseVisualStyleBackColor = true;
@@ -692,11 +695,44 @@
             this.createNotifRadioGroup.TabIndex = 88;
             this.createNotifRadioGroup.TabStop = false;
             // 
+            // getAllContainersButton
+            // 
+            this.getAllContainersButton.Location = new System.Drawing.Point(16, 231);
+            this.getAllContainersButton.Name = "getAllContainersButton";
+            this.getAllContainersButton.Size = new System.Drawing.Size(88, 22);
+            this.getAllContainersButton.TabIndex = 89;
+            this.getAllContainersButton.Text = "Get all";
+            this.getAllContainersButton.UseVisualStyleBackColor = true;
+            this.getAllContainersButton.Click += new System.EventHandler(this.getAllContainersButton_Click);
+            // 
+            // getAllRecordsButton
+            // 
+            this.getAllRecordsButton.Location = new System.Drawing.Point(16, 424);
+            this.getAllRecordsButton.Name = "getAllRecordsButton";
+            this.getAllRecordsButton.Size = new System.Drawing.Size(88, 22);
+            this.getAllRecordsButton.TabIndex = 90;
+            this.getAllRecordsButton.Text = "Get all";
+            this.getAllRecordsButton.UseVisualStyleBackColor = true;
+            this.getAllRecordsButton.Click += new System.EventHandler(this.getAllRecordsButton_Click);
+            // 
+            // getAllNotificationsButton
+            // 
+            this.getAllNotificationsButton.Location = new System.Drawing.Point(16, 616);
+            this.getAllNotificationsButton.Name = "getAllNotificationsButton";
+            this.getAllNotificationsButton.Size = new System.Drawing.Size(88, 22);
+            this.getAllNotificationsButton.TabIndex = 91;
+            this.getAllNotificationsButton.Text = "Get all";
+            this.getAllNotificationsButton.UseVisualStyleBackColor = true;
+            this.getAllNotificationsButton.Click += new System.EventHandler(this.getAllNotificationsButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(707, 883);
+            this.Controls.Add(this.getAllNotificationsButton);
+            this.Controls.Add(this.getAllRecordsButton);
+            this.Controls.Add(this.getAllContainersButton);
             this.Controls.Add(this.createNotifRadioGroup);
             this.Controls.Add(this.createNotifEndpointTextbox);
             this.Controls.Add(this.label13);
@@ -835,6 +871,9 @@
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.TextBox createNotifEndpointTextbox;
         private System.Windows.Forms.GroupBox createNotifRadioGroup;
+        private System.Windows.Forms.Button getAllContainersButton;
+        private System.Windows.Forms.Button getAllRecordsButton;
+        private System.Windows.Forms.Button getAllNotificationsButton;
     }
 }
 

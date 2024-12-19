@@ -261,6 +261,24 @@ namespace Cenario2
         #endregion
 
         #region Container functions
+        private async void getAllContainersButton_Click(object sender, EventArgs e)
+        {
+            string responseData = await getXmlString("", "container");
+
+            // Adding applications fetched to listbox
+            containerListBox.Items.Clear();
+
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNodeList nodes = xmlDoc.GetElementsByTagName("string");
+
+            foreach (XmlNode node in nodes)
+                containerListBox.Items.Add(node.InnerText);
+
+            if (containerListBox.Items.Count == 0)
+                containerListBox.Items.Add("No items found.");
+        }
         private async void getContainerSelectedButton_Click(object sender, EventArgs e)
         {
             if (containerListBox.SelectedItem == null)
@@ -398,6 +416,26 @@ namespace Cenario2
         #endregion
 
         #region Record functions
+
+        private async void getAllRecordsButton_Click(object sender, EventArgs e)
+        {
+            string responseData = await getXmlString("", "record");
+
+            // Adding applications fetched to listbox
+            recordListBox.Items.Clear();
+
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNodeList nodes = xmlDoc.GetElementsByTagName("string");
+
+            foreach (XmlNode node in nodes)
+                recordListBox.Items.Add(node.InnerText);
+
+            if (recordListBox.Items.Count == 0)
+                recordListBox.Items.Add("No items found.");
+        }
+
         private async void getRecordSelectedButton_Click(object sender, EventArgs e)
         {
             if (recordListBox.SelectedItem == null)
@@ -478,6 +516,24 @@ namespace Cenario2
         #endregion
 
         #region Notif functions
+        private async void getAllNotificationsButton_Click(object sender, EventArgs e)
+        {
+            string responseData = await getXmlString("", "notification");
+
+            // Adding applications fetched to listbox
+            notifListBox.Items.Clear();
+
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(responseData);
+
+            XmlNodeList nodes = xmlDoc.GetElementsByTagName("string");
+
+            foreach (XmlNode node in nodes)
+                notifListBox.Items.Add(node.InnerText);
+
+            if (notifListBox.Items.Count == 0)
+                notifListBox.Items.Add("No items found.");
+        }
         private void createNotifButton_Click(object sender, EventArgs e)
         {
             if (curApp == null || curContainer == null)
