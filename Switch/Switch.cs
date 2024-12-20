@@ -12,18 +12,75 @@ using System.IO;
 using System.Xml.Serialization;
 using System.Net;
 using RestSharp;
+using System.Xml.Linq;
+using System.Net.Http;
+using System.Security.Policy;
+using System.Windows.Forms;
+using System.Xml;
 
 namespace Switch
 {
     public partial class Switch : System.Windows.Forms.Form
     {
         //TODO Mudar o url do cliente
-        MqttClient mClient = new MqttClient("test.mosquitto.org");
+        MqttClient mClient = new MqttClient("127.0.0.1");
         string baseURI = @"http://localhost:50669/api/somiod";
-        Application app = new Application(100, "Switch", DateTime.Now);
         string mStrTopicsInfo = "lightBulbState";
+        XDocument app = new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Application", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"), "Switch")
+                    )
+                );
 
         bool lightState = false;
+
+        private async Task<string> getXmlString(string endpoint, string locate)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // GET ALL from API
+                    if (locate != null)
+                        client.DefaultRequestHeaders.Add("somiod-locate", locate);
+
+
+                    HttpResponseMessage response = await client.GetAsync(baseURI + endpoint);
+
+                    response.EnsureSuccessStatusCode();
+                    string responseData = await response.Content.ReadAsStringAsync(); // XML string
+
+                    return responseData;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
+        }
+
+        private async void create(string endpoint, XDocument xml)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    HttpContent content = new StringContent(xml.ToString(), Encoding.UTF8, "application/xml");
+
+                    // POST application
+                    HttpResponseMessage response = await client.PostAsync(baseURI + endpoint, content);
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Error: {ex.Message}", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+            }
+        }
 
         public Switch()
         {
@@ -44,32 +101,7 @@ namespace Switch
 
         private void SendApplication()
         {
-            try
-            {
-                string xmlData = SerializeToXml(app);
-
-                var client = new RestClient(baseURI);
-                var request = new RestRequest();
-
-                request.Method = Method.Post;
-                request.AddHeader("Content-Type", "application/xml;charset=utf-8");
-                request.AddParameter("application/xml", xmlData, ParameterType.RequestBody);
-
-                var response = client.Execute(request);
-
-                if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created)
-                {
-                    System.Windows.Forms.MessageBox.Show("Application successfully sent!");
-                }
-                else
-                {
-                    System.Windows.Forms.MessageBox.Show($"Error: {response.StatusCode} - {response.Content}");
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"Exception: {ex.Message}");
-            }
+            create("", app);
         }
 
         private string SerializeToXml<T>(T obj)
@@ -103,43 +135,53 @@ namespace Switch
             sendRecord();
         }
 
-        private void sendRecord()
+        private async void sendRecord()
         {
-            Record record = new Record();
+            string application = await getXmlString("Lightning", null);
+
+            // Adding fetched application's details to labels
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(application);
+
+            XmlNode appName = xmlDoc.GetElementsByTagName("Name")[0];
+
+            string container = await getXmlString("Lightning/lightBulb", null);
+
+            // Adding fetched container's details to labels
+            XmlDocument xmlDocument = new XmlDocument();
+            xmlDoc.LoadXml(container);
+
+            XmlNode containerName = xmlDocument.GetElementsByTagName("Name")[0];
+
+            string s_appName= appName.InnerText;
+            string s_containerName = containerName.InnerText;
+
+            string content;
+
             if (lightState)
             {
-                record.Content = "on";
+                content = "on";
             }
             else
             {
-                record.Content = "off";
+                content = "off";
             }
-            try
-            {
-                string xmlData = SerializeToXml(record);
 
-                var client = new RestClient(baseURI);
-                var request = new RestRequest();
+            var xml =
+                new XDocument(
+                    new XDeclaration("1.0", "utf-8", "yes"),
+                    new XElement(
+                        XName.Get("Record", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                        new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                        new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                "rec"
+                              ),
+                        new XElement(XName.Get("Content", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                        content)
+                        )
+                    );
 
-                request.Method = Method.Post;
-                request.AddHeader("Content-Type", "record/xml;charset=utf-8");
-                request.AddParameter("record/xml", xmlData, ParameterType.RequestBody);
-
-                var response = client.Execute(request);
-
-                if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created)
-                {
-                    System.Windows.Forms.MessageBox.Show("Record successfully sent!");
-                }
-                else
-                {
-                    System.Windows.Forms.MessageBox.Show($"Error: {response.StatusCode} - {response.Content}");
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"Exception: {ex.Message}");
-            }
+            create(s_appName + "/" + s_containerName + "/record/", xml);
         }
     }
 }

@@ -1,7 +1,12 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Security.Policy;
 using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 using RestSharp;
 using SOMIOD.Models;
@@ -13,10 +18,17 @@ namespace Lightning
     public partial class LightningForm : System.Windows.Forms.Form
     {
         string baseURI = @"http://localhost:50669/api/somiod";
-        Application app = new Application(5, "Lightning", DateTime.Now);
+        XDocument app = new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Application", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"), "Lightning")
+                    )
+                );
         Container container = null;
         //TODO Mudar o url do cliente
-        MqttClient mClient = new MqttClient("test.mosquitto.org");
+        MqttClient mClient = new MqttClient("127.0.0.1");
         string[] mStrTopicsInfo = { "lightBulbState" };
         bool lightState = false;
 
@@ -27,123 +39,71 @@ namespace Lightning
             SendApplication();
         }
 
-        private void SendApplication()
+        private async void create(string endpoint, XDocument xml)
         {
             try
             {
-                string xmlData = SerializeToXml(app);
-
-                var client = new RestClient(baseURI);
-                var request = new RestRequest();
-
-                request.Method = Method.Post;
-                request.AddHeader("Content-Type", "application/xml;charset=utf-8");
-                request.AddParameter("application/xml", xmlData, ParameterType.RequestBody);
-
-                var response = client.Execute(request);
-
-                if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created)
+                using (HttpClient client = new HttpClient())
                 {
-                    System.Windows.Forms.MessageBox.Show("Application successfully sent!");
-                }
-                else
-                {
-                    System.Windows.Forms.MessageBox.Show($"Error: {response.StatusCode} - {response.Content}");
+                    HttpContent content = new StringContent(xml.ToString(), Encoding.UTF8, "application/xml");
+
+                    // POST application
+                    HttpResponseMessage response = await client.PostAsync(baseURI + endpoint, content);
+                    response.EnsureSuccessStatusCode();
                 }
             }
             catch (Exception ex)
             {
-                System.Windows.Forms.MessageBox.Show($"Exception: {ex.Message}");
+                System.Windows.Forms.MessageBox.Show($"Error: {ex.Message}", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
             }
         }
 
-        private string SerializeToXml<T>(T obj)
+        private void SendApplication()
         {
-            //TODO Provavelmente esta funcao tem de ser alterada para corresponder ao formato correto do somiod
-            XmlSerializer serializer = new XmlSerializer(typeof(T));
-            using (StringWriter textWriter = new StringWriter())
-            {
-                serializer.Serialize(textWriter, obj);
-                return textWriter.ToString();
-            }
+            create("", app);
         }
+
 
         private void createLightBulbButton_Click(object sender, EventArgs e)
         {
-            try
-            {
-                if (app.Id.HasValue)
-                {
-                    container = new Container(5, "Light Bulb", DateTime.Now, app.Id.Value);
-                }
-                else
-                {
-                    Console.WriteLine("app.Id is null. Cannot create Container.");
-                }
+            string name = app.Descendants(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"))
+                     .FirstOrDefault()?.Value;
+            var container =
+            new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Container", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                            "lightBulb"
+                                          )
+                )
+            );
 
-                string xmlData = SerializeToXml(container);
+            create(name, container);
 
-                var client = new RestClient($"{baseURI}/{app.Name}");
-                var request = new RestRequest();
+            string containerName = container.Descendants(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"))
+                     .FirstOrDefault()?.Value;
 
-                request.Method = Method.Post;
-                request.AddHeader("Content-Type", "container/xml;charset=utf-8");
-                request.AddParameter("container/xml", xmlData, ParameterType.RequestBody);
+            var notif =
+            new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(
+                    XName.Get("Notification", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                    new XAttribute(XNamespace.Xmlns + "i", "http://www.w3.org/2001/XMLSchema-instance"),
+                    new XElement(XName.Get("Name", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                    "notif1"
+                                  ),
+            new XElement(XName.Get("Endpoint", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                    "127.0.0.1"
+                                  ),
+            new XElement(XName.Get("Event", "http://schemas.datacontract.org/2004/07/SOMIOD.Models"),
+                                    "creation"
+                                  )
+        )
+    );
 
-                var response = client.Execute(request);
-
-                if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created)
-                {
-                    System.Windows.Forms.MessageBox.Show("Container successfully sent!");
-                }
-                else
-                {
-                    System.Windows.Forms.MessageBox.Show($"Error: {response.StatusCode} - {response.Content}");
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"Exception: {ex.Message}");
-            }
-
-            try
-            {
-                Notification notification = null;
-                if (container.Id.HasValue)
-                {
-                    notification = new Notification(5, "not1", DateTime.Now, container.Id.Value, "creation", "mqtt://192.168.1.2:1883",true);
-                }
-                else
-                {
-                    Console.WriteLine("container.Id is null. Cannot create notification.");
-                }
-
-                string xmlData = SerializeToXml(notification);
-
-                var client = new RestClient($"{baseURI}/{app.Name}/{container.Name}");
-                var request = new RestRequest();
-
-                request.Method = Method.Post;
-                request.AddHeader("Content-Type", "notification/xml;charset=utf-8");
-                request.AddParameter("notification/xml", xmlData, ParameterType.RequestBody);
-
-                var response = client.Execute(request);
-
-                if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created)
-                {
-                    System.Windows.Forms.MessageBox.Show("Notification successfully sent!");
-                }
-                else
-                {
-                    System.Windows.Forms.MessageBox.Show($"Error: {response.StatusCode} - {response.Content}");
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show($"Exception: {ex.Message}");
-            }
-
-
+            create(name + "/" + containerName + "/notif/", notif);
         }
 
         private void LightningForm_Load(object sender, EventArgs e)
